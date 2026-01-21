@@ -141,12 +141,13 @@ async function updateProtocolLiquidity() {
 
     const formattedLiquidity = ethers.formatEther(liquidity);
     const displayAmount = parseFloat(formattedLiquidity).toFixed(2);
-    protocolLiquidityEl.textContent = `${displayAmount} ETH`;
+    protocolLiquidityEl.innerHTML = `<span style="color: var(--orange)">${displayAmount}</span> ETH`;
 
     updateUnstakeButtonState();
   } catch (error) {
     console.error("Failed to update protocol liquidity:", error);
-    protocolLiquidityEl.textContent = "—";
+    protocolLiquidityEl.innerHTML =
+      '<span style="color: var(--orange)">0.00</span>';
   }
 }
 
