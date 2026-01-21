@@ -94,7 +94,7 @@
         color: var(--color-txt);
       }
       .container {
-        max-width: 500px;
+        max-width: 450px;
         margin: 10vh auto;
       }
       .stake-unstake-interface {
@@ -300,11 +300,13 @@
               Balance: <span style="color: var(--orange)">0.00</span> ETH
             </div>
           </div>
-          <div class="input-with-icon">
-            <div class="icon-container">
-              <img src="./assets/img/eth.png" alt="ETH" />
+          <div style="display: flex; gap: 8px">
+            <div class="input-with-icon" style="flex: 1">
+              <div class="icon-container">
+                <img src="./assets/img/eth.png" alt="ETH" />
+              </div>
+              <input type="text" id="eth-amount" placeholder="0.00" />
             </div>
-            <input type="text" id="eth-amount" placeholder="0.00" />
           </div>
         </div>
         <button id="stake-btn" class="btn">Stake</button>
