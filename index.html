@@ -122,6 +122,18 @@
         outline: none;
         border-color: var(--orange);
       }
+      .input-with-icon input {
+        padding: 10px;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+        color: var(--color-txt);
+        font-size: 16px;
+      }
+      .input-with-icon input:focus {
+        outline: none;
+        border-color: transparent;
+      }
       .label-balance-container {
         display: flex;
         justify-content: space-between;
@@ -159,6 +171,32 @@
       .btn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+      }
+      .input-with-icon {
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--connect-color-btn);
+        border-radius: 5px;
+        padding: 0 10px;
+        background: var(--color-bg);
+      }
+      .input-with-icon input::placeholder {
+        opacity: 0.4;
+        color: var(--color-txt);
+      }
+      .icon-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+        order: -1;
+      }
+      .icon-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
       }
     </style>
   </head>
@@ -261,7 +299,12 @@
               Balance: <span style="color: var(--orange)">0.00</span> ETH
             </div>
           </div>
-          <input type="text" id="eth-amount" placeholder="0.00" />
+          <div class="input-with-icon">
+            <div class="icon-container">
+              <img src="./assets/img/eth.png" alt="ETH" />
+            </div>
+            <input type="text" id="eth-amount" placeholder="0.00" />
+          </div>
         </div>
         <button id="stake-btn" class="btn">Stake</button>
       </div>
@@ -274,12 +317,12 @@
             </div>
           </div>
           <div style="display: flex; gap: 8px">
-            <input
-              type="text"
-              id="reth-amount"
-              placeholder="0.00"
-              style="flex: 1"
-            />
+            <div class="input-with-icon" style="flex: 1">
+              <div class="icon-container">
+                <img src="./assets/img/reth.png" alt="rETH" />
+              </div>
+              <input type="text" id="reth-amount" placeholder="0.00" />
+            </div>
             <button id="reth-max-btn" class="btn" style="padding: 10px 12px">
               Max
             </button>
