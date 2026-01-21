@@ -128,7 +128,6 @@ async function updateRETHBalance() {
 
 async function updateProtocolLiquidity() {
   try {
-    // Use a reliable Ethereum mainnet RPC endpoint from your config
     const rpcUrl = getRpcUrl("ethereum");
     const provider = new ethers.JsonRpcProvider(rpcUrl);
 
