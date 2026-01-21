@@ -122,18 +122,6 @@
         outline: none;
         border-color: var(--orange);
       }
-      .input-with-icon input {
-        padding: 10px;
-        border: none;
-        border-radius: 0;
-        background: transparent;
-        color: var(--color-txt);
-        font-size: 16px;
-      }
-      .input-with-icon input:focus {
-        outline: none;
-        border-color: transparent;
-      }
       .label-balance-container {
         display: flex;
         justify-content: space-between;
@@ -179,10 +167,22 @@
         border-radius: 5px;
         padding: 0 10px;
         background: var(--color-bg);
+        width: 100%;
       }
-      .input-with-icon input::placeholder {
-        opacity: 0.4;
+      .input-with-icon:focus-within {
+        border-color: var(--orange);
+      }
+      .input-with-icon input {
+        flex: 1;
+        width: 100%;
+        padding: 10px;
+        border: none;
+        background: transparent;
         color: var(--color-txt);
+        font-size: 16px;
+      }
+      .input-with-icon input:focus {
+        outline: none;
       }
       .icon-container {
         display: flex;
@@ -192,6 +192,7 @@
         height: 24px;
         flex-shrink: 0;
         order: -1;
+        pointer-events: none;
       }
       .icon-container img {
         width: 100%;
