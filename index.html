@@ -156,6 +156,10 @@
           background-color: var(--connect-color-hvr);
         }
       }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
     </style>
   </head>
   <body>
@@ -269,7 +273,17 @@
               Balance: <span style="color: var(--orange)">0.00</span> rETH
             </div>
           </div>
-          <input type="text" id="reth-amount" placeholder="0.00" />
+          <div style="display: flex; gap: 8px">
+            <input
+              type="text"
+              id="reth-amount"
+              placeholder="0.00"
+              style="flex: 1"
+            />
+            <button id="reth-max-btn" class="btn" style="padding: 10px 12px">
+              Max
+            </button>
+          </div>
         </div>
         <button id="unstake-btn" class="btn" disabled>Unstake</button>
       </div>

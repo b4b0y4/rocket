@@ -69,11 +69,14 @@ const rETH_ABI = [
 
 const stakeBtn = document.getElementById("stake-btn");
 const unstakeBtn = document.getElementById("unstake-btn");
+const rethMaxBtn = document.getElementById("reth-max-btn");
 const ethAmountInput = document.getElementById("eth-amount");
 const rethAmountInput = document.getElementById("reth-amount");
 const ethBalanceEl = document.getElementById("eth-balance");
 const rethBalanceDisplayEl = document.getElementById("reth-balance-display");
 const protocolLiquidityEl = document.getElementById("protocol-liquidity");
+
+let rethBalance = "0";
 
 let protocolLiquidity = "0";
 
@@ -107,6 +110,7 @@ async function updateRETHBalance() {
     if (!provider || !account) {
       rethBalanceDisplayEl.innerHTML =
         'Balance: <span style="color: var(--orange)">0.00</span> rETH';
+      rethBalance = "0";
       return;
     }
 
@@ -116,13 +120,14 @@ async function updateRETHBalance() {
       provider,
     );
     const balance = await rEthContract.balanceOf(account);
-    const formattedBalance = ethers.formatEther(balance);
-    const displayAmount = parseFloat(formattedBalance).toFixed(4);
+    rethBalance = ethers.formatEther(balance);
+    const displayAmount = parseFloat(rethBalance).toFixed(4);
     rethBalanceDisplayEl.innerHTML = `Balance: <span style="color: var(--orange)">${displayAmount}</span> rETH`;
   } catch (error) {
     console.error("Failed to update rETH balance:", error);
     rethBalanceDisplayEl.innerHTML =
       'Balance: <span style="color: var(--orange)">0.00</span> rETH';
+    rethBalance = "0";
   }
 }
 
@@ -287,6 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
     rethBalanceDisplayEl.innerHTML =
       'Balance: <span style="color: var(--orange)">0.00</span> rETH';
     protocolLiquidityEl.textContent = "0.0";
+    rethBalance = "0";
     unstakeBtn.disabled = true;
   });
 
@@ -308,6 +314,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   stakeBtn.addEventListener("click", stakeETH);
   unstakeBtn.addEventListener("click", unstakeRETH);
+  rethMaxBtn.addEventListener("click", () => {
+    rethAmountInput.value = rethBalance;
+    updateUnstakeButtonState();
+  });
   rethAmountInput.addEventListener("input", updateUnstakeButtonState);
 
   updateProtocolLiquidity();
