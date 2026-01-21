@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+
+    <!-- Primary Meta -->
+    <meta name="title" content="rocket" />
+    <meta
+      name="description"
+      content="A minimal dependency starter template for decentralized applications."
+    />
+
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://b4b0y4.github.io/dappkit/" />
+    <meta property="og:title" content="dappkit" />
+    <meta
+      property="og:description"
+      content="A minimal dependency starter template for decentralized applications."
+    />
+    <meta
+      property="og:image"
+      content="https://b4b0y4.github.io/dappkit/assets/img/dappkit.png"
+    />
+
+    <!-- Twitter Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://b4b0y4.github.io/dappkit/" />
+    <meta name="twitter:title" content="dappkit" />
+    <meta
+      name="twitter:description"
+      content="A minimal dependency starter template for decentralized applications."
+    />
+    <meta
+      name="twitter:image"
+      content="https://b4b0y4.github.io/dappkit/assets/img/dappkit.png"
+    />
+    <title>rocket</title>
+    <script>
+      (() => {
+        const themes = ["light", "dark"];
+        const sys = matchMedia("(prefers-color-scheme: dark)").matches ? 1 : 0;
+        const cur = localStorage.themeOverride
+          ? themes.indexOf(localStorage.themeOverride)
+          : sys;
+        document.documentElement.dataset.theme = themes[cur];
+      })();
+    </script>
+    <link rel="icon" type="image/x-icon" href="./assets/img/favicon.ico" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="./assets/img/apple-touch-icon.png"
+    />
+    <link rel="stylesheet" href="./assets/css/styleKit.css" />
+    <style>
+      :root {
+        --color-bg: #f5f5f5;
+        --color-txt: #1f252b;
+        --orange: #ee7743;
+      }
+      [data-theme="dark"] {
+        --color-bg: #1f252b;
+        --color-txt: #f5f5f5;
+      }
+      html {
+        block-size: 100dvh;
+        inline-size: 100%;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
+        box-sizing: border-box;
+      }
+      body {
+        background: var(--color-bg);
+        color: var(--color-txt);
+        font-family: "Helvetica Neue", system-ui, sans-serif;
+        transition:
+          background 0.3s,
+          color 0.3s;
+        padding: 20px;
+      }
+      input::placeholder {
+        opacity: 0.4;
+        color: var(--color-txt);
+      }
+      .container {
+        max-width: 500px;
+        margin: 10vh auto;
+      }
+      .stake-unstake-interface {
+        display: grid;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      .input-group {
+        display: flex;
+        flex-direction: column;
+      }
+      .input-group label {
+        margin-bottom: 8px;
+        font-weight: bold;
+      }
+      .input-group input {
+        padding: 10px;
+        border-radius: 5px;
+        color: var(--color-txt);
+        background: var(--color-bg);
+        border: 1px solid var(--connect-color-btn);
+        font-size: 16px;
+      }
+      .input-group input:focus {
+        outline: none;
+        border-color: var(--orange);
+      }
+      .label-balance-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .balance-display {
+        font-size: 12px;
+      }
+      .rocket,
+      .liquidity {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .wrapper {
+        display: flex;
+        justify-content: end;
+        align-items: center;
+        width: 100%;
+        gap: 10px;
+      }
+      .btn {
+        color: var(--color-txt);
+        border: none;
+        background-color: var(--connect-color-btn);
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+        font: inherit;
+        transition: background-color 0.3s;
+        &:hover {
+          background-color: var(--connect-color-hvr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="rocket">
+        <h1>
+          <img
+            src="./assets/img/rocketpool.svg"
+            alt="Rocket Pool Logo"
+            style="width: 40px"
+          />
+        </h1>
+        <div class="wrapper">
+          <!-- Theme Button -->
+          <button id="theme-btn" aria-label="Toggle theme" title="theme">
+            <svg
+              id="theme-light"
+              xmlns="http://www.w3.org/2000/svg"
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="12" cy="12" r="5" />
+              <path
+                d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"
+              />
+            </svg>
+            <svg
+              id="theme-dark"
+              xmlns="http://www.w3.org/2000/svg"
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+            </svg>
+            <svg
+              id="theme-system"
+              xmlns="http://www.w3.org/2000/svg"
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+          </button>
+
+          <!-- Settings Button -->
+          <button id="settings-btn" aria-label="Settings" title="RPC Settings">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="26"
+              height="26"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="3"></circle>
+              <path
+                d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+              ></path>
+            </svg>
+          </button>
+
+          <!-- Connect Widget -->
+          <div class="connect-widget">
+            <button id="connect-btn" class="connect-btn">Connect</button>
+            <div id="connect-modal" class="connect-modal">
+              <div class="connect-chain-list" id="connect-chain-list"></div>
+              <div id="connect-get-wallet" class="connect-get-wallet">
+                <a href="https://ethereum.org/en/wallets/" target="_blank"
+                  >Get a Wallet!</a
+                >
+              </div>
+              <div id="connect-wallet-list" class="connect-wallet-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="stake-unstake-interface">
+        <div class="input-group">
+          <div class="label-balance-container">
+            <label for="eth-amount">Stake ETH</label>
+            <div id="eth-balance" class="balance-display">
+              Balance: <span style="color: var(--orange)">0.00</span> ETH
+            </div>
+          </div>
+          <input type="text" id="eth-amount" placeholder="0.00" />
+        </div>
+        <button id="stake-btn" class="btn">Stake</button>
+      </div>
+      <div class="stake-unstake-interface">
+        <div class="input-group">
+          <div class="label-balance-container">
+            <label for="reth-amount">Unstake rETH</label>
+            <div id="reth-balance-display" class="balance-display">
+              Balance: <span style="color: var(--orange)">0.00</span> rETH
+            </div>
+          </div>
+          <input type="text" id="reth-amount" placeholder="0.00" />
+        </div>
+        <button id="unstake-btn" class="btn" disabled>Unstake</button>
+      </div>
+      <div class="liquidity">
+        <h2>Protocol Liquidity</h2>
+        <p>
+          <span id="protocol-liquidity" style="color: var(--orange)">0.0</span>
+          ETH
+        </p>
+      </div>
+    </div>
+
+    <!-- RPC Settings Modal -->
+    <div id="rpc-modal" class="rpc-modal">
+      <div class="rpc-modal-content">
+        <span class="rpc-close-btn">&times;</span>
+        <h2>Custom RPC Settings</h2>
+        <div id="rpc-inputs"></div>
+        <button id="save-rpc-btn">Save</button>
+      </div>
+    </div>
+
+    <!-- Notifications Container -->
+    <div id="notificationContainer"></div>
+
+    <script>
+      // theme.js
+      const themeManager = {
+        themes: ["light", "dark"],
+        sys: () => (matchMedia("(prefers-color-scheme: dark)").matches ? 1 : 0),
+        cur() {
+          return localStorage.themeOverride
+            ? this.themes.indexOf(localStorage.themeOverride)
+            : this.sys();
+        },
+        apply() {
+          let o = localStorage.themeOverride,
+            t = this.themes[this.cur()];
+          Object.assign(document.documentElement.dataset, {
+            theme: t,
+            themeSource: o ? "manual" : "system",
+            selectedTheme: o ? t : "",
+          });
+        },
+        cycle() {
+          localStorage.themeOverride = this.themes[(this.cur() + 1) % 2];
+          this.apply();
+        },
+        reset() {
+          localStorage.removeItem("themeOverride");
+          this.apply();
+        },
+      };
+      document.addEventListener("DOMContentLoaded", () => {
+        let btn = document.getElementById("theme-btn");
+        if (btn) {
+          btn.onclick = () => themeManager.cycle();
+          btn.ondblclick = (e) => (e.preventDefault(), themeManager.reset());
+        }
+        matchMedia("(prefers-color-scheme: dark)").addEventListener(
+          "change",
+          () => !localStorage.themeOverride && themeManager.apply(),
+        );
+        themeManager.apply();
+      });
+    </script>
+    <script type="module" src="./js/main.js"></script>
+  </body>
+</html>
