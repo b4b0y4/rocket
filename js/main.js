@@ -1,5 +1,5 @@
 import { ethers } from "./libs/ethers.min.js";
-import { ConnectWallet, Notification, getRpcUrl } from "./dappkit.js";
+import { ConnectWallet, Notification, getRpcUrl } from "./libs/dappkit.js";
 
 const wallet = new ConnectWallet();
 
@@ -79,6 +79,8 @@ const protocolLiquidityEl = document.getElementById("protocol-liquidity");
 let rethBalance = "0";
 
 let protocolLiquidity = "0";
+
+wallet.setNameResolutionOrder("ens-first");
 
 async function updateETHBalance() {
   try {
@@ -216,7 +218,7 @@ async function stakeETH() {
     });
   } catch (error) {
     console.error("Stake error:", error);
-    Notification.show(error.message.split("(")[0], "danger");
+    Notification.show(error.message.split("(")[0], "error");
   }
 }
 
@@ -267,7 +269,7 @@ async function unstakeRETH() {
     });
   } catch (error) {
     console.error("Unstake error:", error);
-    Notification.show(error.message.split("(")[0], "danger");
+    Notification.show(error.message.split("(")[0], "error");
   }
 }
 
@@ -298,11 +300,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   wallet.onChainChange(async ({ name, allowed }) => {
     if (!allowed) {
-      Notification.show(
-        `Please switch to a supported network. Chain is not supported.`,
-        "danger",
-        { duration: 0 },
-      );
       return;
     }
     Notification.show(`Switched to ${name}`, "info");
