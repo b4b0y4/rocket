@@ -1,13 +1,13 @@
 import { ethers } from "./libs/ethers.min.js";
 import { ConnectWallet, Notification, getRpcUrl } from "./libs/dappkit.js";
 
-const wallet = new ConnectWallet();
+// ============================================================
+// CONFIGURATION
+// ============================================================
 
-// Rocket Pool contract addresses on Ethereum Mainnet
 const rETHContractAddress = "0xae78736cd615f374d3085123a210448e74fc6393";
 const depositPoolAddress = "0xCE15294273CFb9D9b628F4D61636623decDF4fdC";
 
-// Deposit Pool ABI (for staking ETH)
 const DEPOSIT_POOL_ABI = [
   {
     inputs: [],
@@ -18,23 +18,12 @@ const DEPOSIT_POOL_ABI = [
   },
 ];
 
-// rETH ABI
 const rETH_ABI = [
   {
     constant: true,
-    inputs: [
-      {
-        name: "_owner",
-        type: "address",
-      },
-    ],
+    inputs: [{ name: "_owner", type: "address" }],
     name: "balanceOf",
-    outputs: [
-      {
-        name: "balance",
-        type: "uint256",
-      },
-    ],
+    outputs: [{ name: "balance", type: "uint256" }],
     payable: false,
     stateMutability: "view",
     type: "function",
@@ -43,23 +32,13 @@ const rETH_ABI = [
     constant: true,
     inputs: [],
     name: "getTotalCollateral",
-    outputs: [
-      {
-        name: "",
-        type: "uint256",
-      },
-    ],
+    outputs: [{ name: "", type: "uint256" }],
     payable: false,
     stateMutability: "view",
     type: "function",
   },
   {
-    inputs: [
-      {
-        name: "_rethAmount",
-        type: "uint256",
-      },
-    ],
+    inputs: [{ name: "_rethAmount", type: "uint256" }],
     name: "burn",
     outputs: [],
     stateMutability: "nonpayable",
@@ -67,136 +46,146 @@ const rETH_ABI = [
   },
 ];
 
-const stakeBtn = document.getElementById("stake-btn");
-const unstakeBtn = document.getElementById("unstake-btn");
-const rethMaxBtn = document.getElementById("reth-max-btn");
-const ethAmountInput = document.getElementById("eth-amount");
-const rethAmountInput = document.getElementById("reth-amount");
-const ethBalanceEl = document.getElementById("eth-balance");
-const rethBalanceDisplayEl = document.getElementById("reth-balance-display");
-const protocolLiquidityEl = document.getElementById("protocol-liquidity");
+// ============================================================
+// UI MANAGER
+// ============================================================
 
-let rethBalance = "0";
+class UIManager {
+  constructor() {
+    this.elements = {
+      ethBalance: document.getElementById("eth-balance"),
+      rethBalanceDisplay: document.getElementById("reth-balance-display"),
+      protocolLiquidity: document.getElementById("protocol-liquidity"),
+      ethAmountInput: document.getElementById("eth-amount"),
+      rethAmountInput: document.getElementById("reth-amount"),
+      stakeBtn: document.getElementById("stake-btn"),
+      unstakeBtn: document.getElementById("unstake-btn"),
+      rethMaxBtn: document.getElementById("reth-max-btn"),
+    };
+  }
 
-let protocolLiquidity = "0";
+  setETHBalance(value) {
+    this.elements.ethBalance.innerHTML = `Balance: <span style="color: var(--orange)">${value}</span> ETH`;
+  }
 
-wallet.setNameResolutionOrder("ens-first");
+  setRETHBalance(value) {
+    this.elements.rethBalanceDisplay.innerHTML = `Balance: <span style="color: var(--orange)">${value}</span> rETH`;
+  }
 
-async function updateETHBalance() {
-  try {
-    const provider = wallet.getEthersProvider();
-    const account = await wallet.getAccount();
+  setProtocolLiquidity(value) {
+    this.elements.protocolLiquidity.innerHTML = `<span style="color: var(--orange)">${value}</span> ETH`;
+  }
 
-    if (!provider || !account) {
-      ethBalanceEl.innerHTML =
-        'Balance: <span style="color: var(--orange)">0.00</span> ETH';
+  setUnstakeDisabled(disabled) {
+    this.elements.unstakeBtn.disabled = disabled;
+  }
+
+  resetToDisconnected() {
+    this.setETHBalance("0.00");
+    this.setRETHBalance("0.00");
+    this.elements.protocolLiquidity.textContent = "0.0";
+    this.setUnstakeDisabled(true);
+  }
+}
+
+// ============================================================
+// CONTRACT MANAGER
+// ============================================================
+
+class ContractManager {
+  constructor(wallet) {
+    this.wallet = wallet;
+    this.rethBalance = "0";
+    this.protocolLiquidity = "0";
+  }
+
+  async updateETHBalance(ui) {
+    try {
+      const provider = this.wallet.getEthersProvider();
+      const account = await this.wallet.getAccount();
+      if (!provider || !account) {
+        ui.setETHBalance("0.00");
+        return;
+      }
+
+      const balance = await provider.getBalance(account);
+      ui.setETHBalance(parseFloat(ethers.formatEther(balance)).toFixed(4));
+    } catch (error) {
+      console.error("Failed to update ETH balance:", error);
+      ui.setETHBalance("0.00");
+    }
+  }
+
+  async updateRETHBalance(ui) {
+    try {
+      const provider = this.wallet.getEthersProvider();
+      const account = await this.wallet.getAccount();
+      if (!provider || !account) {
+        ui.setRETHBalance("0.00");
+        this.rethBalance = "0";
+        return;
+      }
+
+      const rEthContract = new ethers.Contract(
+        rETHContractAddress,
+        rETH_ABI,
+        provider,
+      );
+      const balance = await rEthContract.balanceOf(account);
+      this.rethBalance = ethers.formatEther(balance);
+      ui.setRETHBalance(parseFloat(this.rethBalance).toFixed(4));
+    } catch (error) {
+      console.error("Failed to update rETH balance:", error);
+      ui.setRETHBalance("0.00");
+      this.rethBalance = "0";
+    }
+  }
+
+  async updateProtocolLiquidity(ui) {
+    try {
+      const provider = new ethers.JsonRpcProvider(getRpcUrl("ethereum"));
+      const rEthContract = new ethers.Contract(
+        rETHContractAddress,
+        rETH_ABI,
+        provider,
+      );
+      const liquidity = await rEthContract.getTotalCollateral();
+      this.protocolLiquidity = liquidity.toString();
+      ui.setProtocolLiquidity(
+        parseFloat(ethers.formatEther(liquidity)).toFixed(2),
+      );
+    } catch (error) {
+      console.error("Failed to update protocol liquidity:", error);
+      ui.setProtocolLiquidity("0.00");
+    }
+  }
+
+  async updateAllBalances(ui) {
+    await Promise.all([
+      this.updateETHBalance(ui),
+      this.updateRETHBalance(ui),
+      this.updateProtocolLiquidity(ui),
+    ]);
+    this.syncUnstakeButton(ui);
+  }
+
+  syncUnstakeButton(ui) {
+    const amount = ui.elements.rethAmountInput.value;
+    if (!amount || parseFloat(amount) <= 0) {
+      ui.setUnstakeDisabled(false);
       return;
     }
-
-    const balance = await provider.getBalance(account);
-    const formattedBalance = ethers.formatEther(balance);
-    const displayAmount = parseFloat(formattedBalance).toFixed(4);
-    ethBalanceEl.innerHTML = `Balance: <span style="color: var(--orange)">${displayAmount}</span> ETH`;
-  } catch (error) {
-    console.error("Failed to update ETH balance:", error);
-    ethBalanceEl.innerHTML =
-      'Balance: <span style="color: var(--orange)">0.00</span> ETH';
-  }
-}
-
-async function updateRETHBalance() {
-  try {
-    const provider = wallet.getEthersProvider();
-    const account = await wallet.getAccount();
-
-    if (!provider || !account) {
-      rethBalanceDisplayEl.innerHTML =
-        'Balance: <span style="color: var(--orange)">0.00</span> rETH';
-      rethBalance = "0";
-      return;
+    try {
+      const unstakeWei = ethers.parseEther(amount);
+      const liquidityBN = BigInt(this.protocolLiquidity);
+      ui.setUnstakeDisabled(liquidityBN === 0n || unstakeWei > liquidityBN);
+    } catch {
+      ui.setUnstakeDisabled(false);
     }
-
-    const rEthContract = new ethers.Contract(
-      rETHContractAddress,
-      rETH_ABI,
-      provider,
-    );
-    const balance = await rEthContract.balanceOf(account);
-    rethBalance = ethers.formatEther(balance);
-    const displayAmount = parseFloat(rethBalance).toFixed(4);
-    rethBalanceDisplayEl.innerHTML = `Balance: <span style="color: var(--orange)">${displayAmount}</span> rETH`;
-  } catch (error) {
-    console.error("Failed to update rETH balance:", error);
-    rethBalanceDisplayEl.innerHTML =
-      'Balance: <span style="color: var(--orange)">0.00</span> rETH';
-    rethBalance = "0";
-  }
-}
-
-async function updateProtocolLiquidity() {
-  try {
-    const rpcUrl = getRpcUrl("ethereum");
-    const provider = new ethers.JsonRpcProvider(rpcUrl);
-
-    const rEthContract = new ethers.Contract(
-      rETHContractAddress,
-      rETH_ABI,
-      provider,
-    );
-    const liquidity = await rEthContract.getTotalCollateral();
-    protocolLiquidity = liquidity.toString();
-
-    const formattedLiquidity = ethers.formatEther(liquidity);
-    const displayAmount = parseFloat(formattedLiquidity).toFixed(2);
-    protocolLiquidityEl.innerHTML = `<span style="color: var(--orange)">${displayAmount}</span> ETH`;
-
-    updateUnstakeButtonState();
-  } catch (error) {
-    console.error("Failed to update protocol liquidity:", error);
-    protocolLiquidityEl.innerHTML =
-      '<span style="color: var(--orange)">0.00</span>';
-  }
-}
-
-function updateUnstakeButtonState() {
-  const unstakeAmount = rethAmountInput.value;
-
-  if (!unstakeAmount || parseFloat(unstakeAmount) <= 0) {
-    unstakeBtn.disabled = false;
-    return;
   }
 
-  try {
-    const unstakeWei = ethers.parseEther(unstakeAmount);
-    const liquidityBN = BigInt(protocolLiquidity);
-
-    if (liquidityBN === 0n || unstakeWei > liquidityBN) {
-      unstakeBtn.disabled = true;
-    } else {
-      unstakeBtn.disabled = false;
-    }
-  } catch (error) {
-    unstakeBtn.disabled = false;
-  }
-}
-
-async function stakeETH() {
-  const provider = wallet.getEthersProvider();
-  if (!provider) {
-    Notification.show("Please connect your wallet first", "warning");
-    return;
-  }
-
-  const amount = ethAmountInput.value;
-  if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
-    Notification.show(
-      "Please enter a valid amount of ETH to stake.",
-      "warning",
-    );
-    return;
-  }
-
-  try {
+  async executeStake(amount, ui) {
+    const provider = this.wallet.getEthersProvider();
     const signer = await provider.getSigner();
     const depositPoolContract = new ethers.Contract(
       depositPoolAddress,
@@ -207,49 +196,23 @@ async function stakeETH() {
     const tx = await depositPoolContract.deposit({
       value: ethers.parseEther(amount),
     });
-
     Notification.track(tx, {
       label: `Staking ${amount} ETH`,
-      onSuccess: () => {
-        updateETHBalance();
-        updateRETHBalance();
-        updateProtocolLiquidity();
-      },
+      onSuccess: () => this.updateAllBalances(ui),
     });
-  } catch (error) {
-    console.error("Stake error:", error);
-    Notification.show(error.message.split("(")[0], "error");
-  }
-}
-
-async function unstakeRETH() {
-  const provider = wallet.getEthersProvider();
-  if (!provider) {
-    Notification.show("Please connect your wallet first", "warning");
-    return;
   }
 
-  const amount = rethAmountInput.value;
-  if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
-    Notification.show(
-      "Please enter a valid amount of rETH to unstake.",
-      "warning",
-    );
-    return;
-  }
+  async executeUnstake(amount, ui) {
+    const amountInWei = ethers.parseEther(amount);
+    if (amountInWei > BigInt(this.protocolLiquidity)) {
+      Notification.show(
+        "Not enough liquidity to unstake that amount.",
+        "warning",
+      );
+      return;
+    }
 
-  const amountInWei = ethers.parseEther(amount);
-  const liquidityBN = BigInt(protocolLiquidity);
-
-  if (amountInWei > liquidityBN) {
-    Notification.show(
-      "Not enough liquidity to unstake that amount.",
-      "warning",
-    );
-    return;
-  }
-
-  try {
+    const provider = this.wallet.getEthersProvider();
     const signer = await provider.getSigner();
     const rEthContract = new ethers.Contract(
       rETHContractAddress,
@@ -258,64 +221,119 @@ async function unstakeRETH() {
     );
 
     const tx = await rEthContract.burn(amountInWei);
-
     Notification.track(tx, {
       label: `Unstaking ${amount} rETH`,
-      onSuccess: () => {
-        updateETHBalance();
-        updateRETHBalance();
-        updateProtocolLiquidity();
-      },
+      onSuccess: () => this.updateAllBalances(ui),
     });
-  } catch (error) {
-    console.error("Unstake error:", error);
-    Notification.show(error.message.split("(")[0], "error");
   }
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  wallet.onConnect(async (data) => {
-    const account = data.accounts[0];
-    const shortAccount = `${account.slice(0, 6)}...${account.slice(-4)}`;
-    Notification.show(
-      `Connected to ${wallet.getLastWallet()} with account ${shortAccount}`,
-      "success",
+// ============================================================
+// MAIN APP
+// ============================================================
+
+class RocketPoolApp {
+  constructor() {
+    this.wallet = new ConnectWallet();
+    this.wallet.setNameResolutionOrder("ens-first");
+    this.ui = new UIManager();
+    this.contracts = new ContractManager(this.wallet);
+  }
+
+  init() {
+    this.setupWalletEvents();
+    this.setupUIEvents();
+    this.contracts.updateProtocolLiquidity(this.ui);
+
+    if (this.wallet.isConnected()) {
+      const tryLoad = async (retries = 5) => {
+        const provider = this.wallet.getEthersProvider();
+        if (provider) {
+          await this.contracts.updateETHBalance(this.ui);
+          await this.contracts.updateRETHBalance(this.ui);
+          this.contracts.syncUnstakeButton(this.ui);
+        } else if (retries > 0) {
+          setTimeout(() => tryLoad(retries - 1), 300);
+        }
+      };
+      tryLoad();
+    }
+  }
+
+  setupWalletEvents() {
+    this.wallet.onConnect(async (data) => {
+      const account = data.accounts[0];
+      const shortAccount = `${account.slice(0, 6)}...${account.slice(-4)}`;
+      Notification.show(
+        `Connected to ${this.wallet.getLastWallet()} with account ${shortAccount}`,
+        "success",
+      );
+      await this.contracts.updateAllBalances(this.ui);
+    });
+
+    this.wallet.onDisconnect(() => {
+      Notification.show("Wallet disconnected", "warning");
+      this.ui.resetToDisconnected();
+    });
+
+    this.wallet.onChainChange(async ({ name, allowed }) => {
+      if (!allowed) return;
+      Notification.show(`Switched to ${name}`, "info");
+      await this.contracts.updateAllBalances(this.ui);
+    });
+  }
+
+  setupUIEvents() {
+    this.ui.elements.stakeBtn.addEventListener("click", () =>
+      this.handleTransaction(async () => {
+        const amount = this.ui.elements.ethAmountInput.value;
+        if (!amount || isNaN(amount) || parseFloat(amount) <= 0)
+          throw new Error("Please enter a valid amount of ETH to stake.");
+        await this.contracts.executeStake(amount, this.ui);
+      }),
     );
 
-    await updateETHBalance();
-    await updateRETHBalance();
-    await updateProtocolLiquidity();
-  });
+    this.ui.elements.unstakeBtn.addEventListener("click", () =>
+      this.handleTransaction(async () => {
+        const amount = this.ui.elements.rethAmountInput.value;
+        if (!amount || isNaN(amount) || parseFloat(amount) <= 0)
+          throw new Error("Please enter a valid amount of rETH to unstake.");
+        await this.contracts.executeUnstake(amount, this.ui);
+      }),
+    );
 
-  wallet.onDisconnect(() => {
-    Notification.show("Wallet disconnected", "warning");
-    ethBalanceEl.innerHTML =
-      'Balance: <span style="color: var(--orange)">0.00</span> ETH';
-    rethBalanceDisplayEl.innerHTML =
-      'Balance: <span style="color: var(--orange)">0.00</span> rETH';
-    protocolLiquidityEl.textContent = "0.0";
-    rethBalance = "0";
-    unstakeBtn.disabled = true;
-  });
+    this.ui.elements.rethMaxBtn.addEventListener("click", () => {
+      this.ui.elements.rethAmountInput.value = this.contracts.rethBalance;
+      this.contracts.syncUnstakeButton(this.ui);
+    });
 
-  wallet.onChainChange(async ({ name, allowed }) => {
-    if (!allowed) {
+    this.ui.elements.rethAmountInput.addEventListener("input", () =>
+      this.contracts.syncUnstakeButton(this.ui),
+    );
+  }
+
+  async handleTransaction(fn) {
+    if (!this.wallet.isConnected()) {
+      Notification.show("Please connect your wallet first", "warning");
       return;
     }
-    Notification.show(`Switched to ${name}`, "info");
+    try {
+      await fn();
+    } catch (err) {
+      console.error("Transaction error:", err);
+      Notification.show(
+        err.reason || err.message.split("(")[0] || "Transaction failed",
+        "error",
+      );
+    }
+  }
+}
 
-    await updateETHBalance();
-    await updateRETHBalance();
-    await updateProtocolLiquidity();
-  });
+// ============================================================
+// INIT
+// ============================================================
 
-  stakeBtn.addEventListener("click", stakeETH);
-  unstakeBtn.addEventListener("click", unstakeRETH);
-  rethMaxBtn.addEventListener("click", () => {
-    rethAmountInput.value = rethBalance;
-    updateUnstakeButtonState();
-  });
-  rethAmountInput.addEventListener("input", updateUnstakeButtonState);
-
-  updateProtocolLiquidity();
+document.addEventListener("DOMContentLoaded", () => {
+  const app = new RocketPoolApp();
+  app.init();
 });
