@@ -234,8 +234,8 @@ class ContractManager {
 
 class RocketPoolApp {
   constructor() {
-    this.wallet = new ConnectWallet();
-    this.wallet.setNameResolutionOrder("ens-first");
+    this.wallet = new ConnectWallet({autoConnect: true});
+    this.wallet.setNameResolutionOrder(['ens', 'gns', 'wns']);
     this.ui = new UIManager();
     this.contracts = new ContractManager(this.wallet);
   }

@@ -23,6 +23,28 @@ const WNS_ABI = [
 ];
 
 // ============================================================
+// GNS (Gwei Name Service) CONTRACT CONFIGURATION
+// ============================================================
+
+const GNS_CONTRACT_ADDRESS = "0x9D51D507BC7264d4fE8Ad1cf7Fe191933A0a81d6";
+const GNS_ABI = [
+  {
+    inputs: [{ internalType: "address", name: "addr", type: "address" }],
+    name: "reverseResolve",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "string", name: "name", type: "string" }],
+    name: "resolve",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+];
+
+// ============================================================
 // CONSTANTS & CONFIGURATION
 // ============================================================
 
@@ -388,7 +410,8 @@ export class ConnectWallet {
     this.storage = options.storage || window.localStorage;
     this.currentProvider = null;
     this.providerListeners = null;
-    this.nameResolutionOrder = options.nameResolutionOrder || "wns-first";
+    this.autoConnect = options.autoConnect !== false;
+    this.nameResolutionOrder = options.nameResolutionOrder || ["ens", "gns", "wns"];
     this.showUnsupportedNetworkNotification =
       options.showUnsupportedNetworkNotification !== false;
     this.unsupportedNetworkNotificationId = null;
@@ -486,6 +509,8 @@ export class ConnectWallet {
     this.render();
     if (this.isConnected() && this.getLastWallet() === detail.info.name)
       this.syncConnectedProviderState(detail);
+    else if (this.autoConnect && !this.isConnected())
+      this.connectWallet(detail.info.name).catch(() => {});
   }
 
   requestProviderState(provider, method = "eth_accounts") {
@@ -672,7 +697,7 @@ export class ConnectWallet {
     if (this.unsupportedNetworkNotificationId)
       Notification.hide(this.unsupportedNetworkNotificationId);
     this.unsupportedNetworkNotificationId = Notification.show(
-      "Please switch to Ethereum.",
+      "Please switch to a supported network.",
       "error",
       { duration: 0 },
     );
@@ -715,6 +740,20 @@ export class ConnectWallet {
     }
   }
 
+  async resolveGNS(address) {
+    try {
+      const name = await new ethers.Contract(
+        GNS_CONTRACT_ADDRESS,
+        GNS_ABI,
+        getEthereumProvider(),
+      ).reverseResolve(address);
+      if (!name) return null;
+      return name.endsWith(".gwei") ? name : `${name}.gwei`;
+    } catch {
+      return null;
+    }
+  }
+
   async resolveENS(address) {
     try {
       const provider = getEthereumProvider();
@@ -729,14 +768,14 @@ export class ConnectWallet {
   async resolveName(address) {
     if (!this.elements.connectBtn) return;
     const short = shortenAddress(address);
-    const order =
-      this.nameResolutionOrder === "wns-first"
-        ? ["wns", "ens"]
-        : ["ens", "wns"];
     const resolvers = {
       wns: async () => {
         const name = await this.resolveWNS(address);
         return name ? { name, avatar: null, source: "wns" } : null;
+      },
+      gns: async () => {
+        const name = await this.resolveGNS(address);
+        return name ? { name, avatar: null, source: "gns" } : null;
       },
       ens: async () => {
         const { name, avatar } = await this.resolveENS(address);
@@ -745,7 +784,7 @@ export class ConnectWallet {
     };
     try {
       let resolved = null;
-      for (const source of order) {
+      for (const source of this.nameResolutionOrder) {
         resolved = await resolvers[source]();
         if (resolved) break;
       }
@@ -753,10 +792,7 @@ export class ConnectWallet {
       this.elements.connectBtn.innerHTML = `<div class="name-details"><div class="resolved-name">${resolved.name}</div><div class="named-address-row"><span class="named-address">${short}</span><span class="connect-copy-btn" data-copy="${address}"></span></div></div>${resolved.avatar ? `<img src="${resolved.avatar}" style="border-radius: 50%">` : ""}`;
       this.elements.connectBtn.classList.add("name-resolved");
       this.elements.connectBtn.setAttribute("data-address", address);
-      this.elements.connectBtn.setAttribute(
-        "data-resolution-source",
-        resolved.source,
-      );
+      this.elements.connectBtn.setAttribute("data-resolution-source", resolved.source);
     } catch {}
   }
 
@@ -914,24 +950,20 @@ export class ConnectWallet {
   }
   async getResolvedName(address) {
     if (!address) return "";
-    const order =
-      this.nameResolutionOrder === "wns-first"
-        ? ["wns", "ens"]
-        : ["ens", "wns"];
     const resolvers = {
-      wns: async () => {
-        const name = await this.resolveWNS(address);
-        return name ? { name, avatar: null, source: "wns" } : null;
-      },
+      wns: () => this.resolveWNS(address),
+      gns: () => this.resolveGNS(address),
       ens: async () => {
-        const { name, avatar } = await this.resolveENS(address);
-        return name ? { name, avatar, source: "ens" } : null;
+        const { name } = await this.resolveENS(address);
+        return name;
       },
     };
-    for (const source of order) {
-      const resolved = await resolvers[source]();
-      if (resolved?.name) return resolved.name;
-    }
+    try {
+      for (const source of this.nameResolutionOrder) {
+        const name = await resolvers[source]();
+        if (name) return name;
+      }
+    } catch {}
     return this.getShortAddr(address);
   }
   onConnect(cb) {
@@ -945,10 +977,8 @@ export class ConnectWallet {
   }
 
   setNameResolutionOrder(order) {
-    if (order !== "wns-first" && order !== "ens-first") {
-      console.warn(
-        'Invalid name resolution order. Use "wns-first" or "ens-first"',
-      );
+    if (!Array.isArray(order) || order.length === 0) {
+      console.warn("Invalid name resolution order. Pass an array like ['ens', 'gns', 'wns']");
       return;
     }
     this.nameResolutionOrder = order;
