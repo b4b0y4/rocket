@@ -1,52 +1,23 @@
 import { ethers } from "./ethers.min.js";
 
-// ============================================================
-// WNS CONTRACT CONFIGURATION
-// ============================================================
-
+const NAMING_ABI = [
+  {
+    inputs: [{ internalType: "address", name: "addr", type: "address" }],
+    name: "reverseResolve",
+    outputs: [{ internalType: "string", name: "", type: "string" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "string", name: "name", type: "string" }],
+    name: "resolve",
+    outputs: [{ internalType: "address", name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+];
 const WNS_CONTRACT_ADDRESS = "0x0000000000696760E15f265e828DB644A0c242EB";
-const WNS_ABI = [
-  {
-    inputs: [{ internalType: "address", name: "addr", type: "address" }],
-    name: "reverseResolve",
-    outputs: [{ internalType: "string", name: "", type: "string" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "string", name: "name", type: "string" }],
-    name: "resolve",
-    outputs: [{ internalType: "address", name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
-  },
-];
-
-// ============================================================
-// GNS (Gwei Name Service) CONTRACT CONFIGURATION
-// ============================================================
-
 const GNS_CONTRACT_ADDRESS = "0x9D51D507BC7264d4fE8Ad1cf7Fe191933A0a81d6";
-const GNS_ABI = [
-  {
-    inputs: [{ internalType: "address", name: "addr", type: "address" }],
-    name: "reverseResolve",
-    outputs: [{ internalType: "string", name: "", type: "string" }],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [{ internalType: "string", name: "name", type: "string" }],
-    name: "resolve",
-    outputs: [{ internalType: "address", name: "", type: "address" }],
-    stateMutability: "view",
-    type: "function",
-  },
-];
-
-// ============================================================
-// CONSTANTS & CONFIGURATION
-// ============================================================
 
 const STORAGE_KEYS = {
   CHAIN_ID: "connectCurrentChainId",
@@ -77,12 +48,9 @@ export const networkConfigs = {
     icon: "./assets/img/eth.png",
     explorerUrl: "https://etherscan.io/tx/",
     showInUI: true,
+    rpcConfigurable: true,
   },
 };
-
-// ============================================================
-// HELPERS
-// ============================================================
 
 const normalizeChainId = (chainId) => {
   if (typeof chainId === "string") chainId = chainId.trim();
@@ -130,18 +98,17 @@ const onReady = (cb) =>
     ? document.addEventListener("DOMContentLoaded", cb)
     : cb();
 
-// ============================================================
-// RPC MODAL
-// ============================================================
-
 const rpcModal = document.getElementById("rpc-modal");
 const toggleRpcModal = (show) => rpcModal?.classList.toggle("show", show);
+
+const getRpcConfigurableNetworks = () =>
+  getVisibleNetworks().filter(([, c]) => c.rpcConfigurable);
 
 function populateRpcInputs() {
   const rpcInputs = document.getElementById("rpc-inputs");
   if (!rpcInputs) return;
   rpcInputs.innerHTML = "";
-  getVisibleNetworks().forEach(([network, cfg]) => {
+  getRpcConfigurableNetworks().forEach(([network, cfg]) => {
     const div = document.createElement("div");
     const label = document.createElement("label");
     label.innerText = cfg.name;
@@ -156,7 +123,7 @@ function populateRpcInputs() {
 }
 
 function saveRpcSettings() {
-  getVisibleNetworks().forEach(([network]) => {
+  getRpcConfigurableNetworks().forEach(([network]) => {
     const input = document.getElementById(`${network}-rpc`);
     if (!input) return;
     input.value
@@ -175,10 +142,6 @@ document
 window.addEventListener("click", (e) => {
   if (e.target === rpcModal) toggleRpcModal(false);
 });
-
-// ============================================================
-// COPY TO CLIPBOARD
-// ============================================================
 
 class Copy {
   static initialized = false;
@@ -246,10 +209,6 @@ class Copy {
 }
 
 onReady(() => Copy.init());
-
-// ============================================================
-// NOTIFICATIONS
-// ============================================================
 
 export class Notification {
   static container = null;
@@ -399,10 +358,6 @@ export class Notification {
   }
 }
 
-// ============================================================
-// WALLET CONNECTION
-// ============================================================
-
 export class ConnectWallet {
   constructor(options = {}) {
     this.networkConfigs = options.networkConfigs || networkConfigs;
@@ -486,7 +441,9 @@ export class ConnectWallet {
       e.stopPropagation(),
     );
     document.addEventListener("click", () => this.hideModal());
-    this.elements.connectRpc?.addEventListener("click", () => {
+    this.elements.connectRpc?.addEventListener("click", (e) => {
+      const btn = e.currentTarget;
+      btn.dataset.spin = btn.dataset.spin === "true" ? "false" : "true";
       populateRpcInputs();
       toggleRpcModal(true);
       this.hideModal();
@@ -728,27 +685,22 @@ export class ConnectWallet {
   }
 
   async resolveWNS(address) {
-    try {
-      const name = await new ethers.Contract(
-        WNS_CONTRACT_ADDRESS,
-        WNS_ABI,
-        getEthereumProvider(),
-      ).reverseResolve(address);
-      return name || null;
-    } catch {
-      return null;
-    }
+    return this.resolveNamedContract(address, WNS_CONTRACT_ADDRESS);
   }
 
   async resolveGNS(address) {
+    return this.resolveNamedContract(address, GNS_CONTRACT_ADDRESS, ".gwei");
+  }
+
+  async resolveNamedContract(address, contractAddress, suffix) {
     try {
       const name = await new ethers.Contract(
-        GNS_CONTRACT_ADDRESS,
-        GNS_ABI,
+        contractAddress,
+        NAMING_ABI,
         getEthereumProvider(),
       ).reverseResolve(address);
       if (!name) return null;
-      return name.endsWith(".gwei") ? name : `${name}.gwei`;
+      return suffix && !name.endsWith(suffix) ? `${name}${suffix}` : name;
     } catch {
       return null;
     }
@@ -765,9 +717,7 @@ export class ConnectWallet {
     }
   }
 
-  async resolveName(address) {
-    if (!this.elements.connectBtn) return;
-    const short = shortenAddress(address);
+  async resolveOrdered(address) {
     const resolvers = {
       wns: async () => {
         const name = await this.resolveWNS(address);
@@ -782,13 +732,19 @@ export class ConnectWallet {
         return name ? { name, avatar, source: "ens" } : null;
       },
     };
+    for (const source of this.nameResolutionOrder) {
+      const resolved = await resolvers[source]();
+      if (resolved) return resolved;
+    }
+    return null;
+  }
+
+  async resolveName(address) {
+    if (!this.elements.connectBtn) return;
     try {
-      let resolved = null;
-      for (const source of this.nameResolutionOrder) {
-        resolved = await resolvers[source]();
-        if (resolved) break;
-      }
+      const resolved = await this.resolveOrdered(address);
       if (!resolved?.name) return;
+      const short = shortenAddress(address);
       this.elements.connectBtn.innerHTML = `<div class="name-details"><div class="resolved-name">${resolved.name}</div><div class="named-address-row"><span class="named-address">${short}</span><span class="connect-copy-btn" data-copy="${address}"></span></div></div>${resolved.avatar ? `<img src="${resolved.avatar}" style="border-radius: 50%">` : ""}`;
       this.elements.connectBtn.classList.add("name-resolved");
       this.elements.connectBtn.setAttribute("data-address", address);
@@ -950,19 +906,9 @@ export class ConnectWallet {
   }
   async getResolvedName(address) {
     if (!address) return "";
-    const resolvers = {
-      wns: () => this.resolveWNS(address),
-      gns: () => this.resolveGNS(address),
-      ens: async () => {
-        const { name } = await this.resolveENS(address);
-        return name;
-      },
-    };
     try {
-      for (const source of this.nameResolutionOrder) {
-        const name = await resolvers[source]();
-        if (name) return name;
-      }
+      const resolved = await this.resolveOrdered(address);
+      if (resolved?.name) return resolved.name;
     } catch {}
     return this.getShortAddr(address);
   }
