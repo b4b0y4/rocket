@@ -176,7 +176,7 @@ input {
   padding: var(--dk-space-sm) var(--dk-space-lg);
   font-size: var(--dk-font-lg);
   color: var(--dk-color-txt);
-  background: var(--dk-color-bg);
+  background: var(--dk-connect-color-btn);
   border: none;
   border-radius: var(--dk-radius-xl);
   cursor: pointer;
@@ -184,7 +184,7 @@ input {
 }
 
 .connect-btn:hover {
-  background-color: var(--dk-connect-color-btn);
+  background-color: var(--dk-connect-color-hvr);
 }
 
 .connect-btn.connected {
